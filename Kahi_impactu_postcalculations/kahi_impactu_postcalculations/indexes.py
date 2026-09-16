@@ -12,6 +12,7 @@ def create_indexes(db):
     # WORKS COLLECTION
     # =========================================================
     db["works"].create_index({"groups.id": 1})
+    db["works"].create_index({"doi": 1})
     db["works"].create_index({"source.id": 1})
     db["works"].create_index({"external_ids.id": 1})
     db["works"].create_index({"authors.ranking.source": 1})

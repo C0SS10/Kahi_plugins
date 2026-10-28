@@ -36,6 +36,7 @@ def create_indexes(db):
     })
     db["works"].create_index({"countries": 1})
     db["works"].create_index({"citations_count_openalex": 1})
+    db["works"].create_index({"author_count": 1})
 
     # --- Global search (without entity filter) ---
     db["works"].create_index({"citations_count_openalex": -1, "_id": 1})

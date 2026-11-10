@@ -169,7 +169,7 @@ def work_persistent_id_pipeline():
     """Every work complete and unchanged except for ``_id``, now its persistent id.
 
     The ObjectId is not kept: it changes in every release anyway. ``_id`` cannot
-    change in place, so the output goes to a new collection that replaces works.
+    change in place, so set_work_persistent_ids writes this output over works.
     The id is computed on {_id, candidates} only and the full work joined at the
     end, so the window sort never moves whole documents (works is ~40 GB).
     """
@@ -177,3 +177,25 @@ def work_persistent_id_pipeline():
         {"$lookup": {"from": "works", "localField": "_id", "foreignField": "_id", "as": "work"}},
         {"$replaceWith": {"$mergeObjects": [{"$first": "$work"}, {"_id": "$persistent_id.id"}]}},
     ]
+
+
+def set_work_persistent_ids(db):
+    """Replace the ObjectId ``_id`` of every work with its persistent id.
+
+    ``$out`` into works itself fills a temporary collection created with the
+    indexes of works and renames it over works when it ends: readers never see
+    a half-done collection and, if it fails, works is left as it was. It needs
+    free disk for a second copy of works while it runs.
+
+    Returns the number of works per source of their id, in WORK_ID_PRIORITY order.
+    """
+    # The ids depend only on external_ids and types, so when no ObjectId is left a rerun would rewrite works unchanged.
+    if db["works"].find_one({"_id": {"$type": "objectId"}}, {"_id": 1}):
+        db["works"].aggregate(work_persistent_id_pipeline() + [{"$out": "works"}], allowDiskUse=True)
+
+    rows = db["works"].aggregate(
+        persistent_id_assignment() + [{"$group": {"_id": "$persistent_id.source", "works": {"$sum": 1}}}],
+        allowDiskUse=True,
+    )
+    counts = {row["_id"]: row["works"] for row in rows}
+    return {source: counts[source] for source in WORK_ID_PRIORITY if source in counts}

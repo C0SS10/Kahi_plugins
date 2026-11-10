@@ -21,6 +21,7 @@ from kahi_impactu_postcalculations.person_persistent_ids import (
     process_person_id,
     recover_person_id_migration,
 )
+from kahi_impactu_postcalculations.work_persistent_ids import set_work_persistent_ids
 from kahi_impactu_type_catalog import get_impactu_catalog
 import requests
 from itertools import islice
@@ -344,6 +345,12 @@ class Kahi_impactu_postcalculations(KahiBase):
 
         print("INFO: Setting up impactu types for works")
         self.process_types(db)
+
+        # After process_types: the ISBN is only an id for works typed as books.
+        print("INFO: Setting up persistent ids for works")
+        for source, count in set_work_persistent_ids(db).items():
+            print(f"INFO: works with persistent id from {source}: {count}")
+
         if self.denormalization_enabled:
             print(f"INFO: Denormalizing data in {self.database_name}")
             denormalize(

@@ -84,6 +84,12 @@ Notes:
   titles are processed once per work instead of once per person/affiliation.
 - Type-mapping warnings are emitted only with `verbose: 4` or higher. Type
   mappings are compiled once per source and reused by all workers.
+- After the types, every work gets a persistent `_id`: its DOI, OpenAlex,
+  ScienTI, Minciencias, handle, DSpace OAI, ISBN (books only) or Google
+  Scholar id, in that order, or its ObjectId as text when it has none.
+  Works sharing an id get `-000`, `-001`... `works` is rewritten with `$out`,
+  which needs free disk for a second copy of `works` while it runs. The step
+  is skipped when no work has an ObjectId `_id`.
 - Type rules come from the shared catalog JSON bundled by
   `Kahi_impactu_type_catalog==0.1.0`.
 

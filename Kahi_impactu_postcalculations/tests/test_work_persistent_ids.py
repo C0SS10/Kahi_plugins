@@ -5,7 +5,7 @@ from bson import ObjectId
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 
-from kahi_impactu_postcalculations.work_persistent_ids import persistent_id_assignment
+from kahi_impactu_postcalculations.work_persistent_ids import persistent_id_assignment, set_work_persistent_ids
 
 WORK_ID = ObjectId("6ab557465418a51e3260366f")
 
@@ -102,3 +102,25 @@ def test_works_sharing_an_id_get_a_suffix_ordered_by_their_other_ids(db):
         "10.7765/9781526147295-001",
         "10.5555/unique",
     ]
+
+
+def test_set_work_persistent_ids_replaces_the_object_ids_of_works(db):
+    # A database of its own, dropped at the end: the test never writes to kahi.
+    scratch = db.client["kahi_test_work_persistent_ids"]
+    db.client.drop_database(scratch.name)
+    without_ids = ObjectId()
+    scratch["works"].insert_many([
+        {"_id": ObjectId(), "external_ids": [ext("doi", "https://doi.org/10.5555/A")], "titles": [{"title": "a"}]},
+        {"_id": without_ids, "external_ids": [ext("ciarp", "1-2")], "titles": [{"title": "b"}]},
+    ])
+    scratch["works"].create_index("titles.title")
+    try:
+        for _ in range(2):  # the second run finds no ObjectId and keeps the same ids
+            assert set_work_persistent_ids(scratch) == {"doi": 1, "mongodb_id": 1}
+            assert list(scratch["works"].find({}, {"titles": 1}).sort("titles.title", 1)) == [
+                {"_id": "10.5555/a", "titles": [{"title": "a"}]},
+                {"_id": str(without_ids), "titles": [{"title": "b"}]},
+            ]
+            assert "titles.title_1" in scratch["works"].index_information()
+    finally:
+        db.client.drop_database(scratch.name)

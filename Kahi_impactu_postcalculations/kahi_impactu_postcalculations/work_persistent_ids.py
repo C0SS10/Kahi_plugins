@@ -19,7 +19,13 @@ WORK_ID_PRIORITY = [
 
 # A real handle is "<prefix>/<suffix>"; 123456789 is DSpace's default prefix, shared by unregistered repositories.
 HANDLE_REGEX = r"^oai:[^:]+:((?!123456789/)\d[\d.]*/\d+)$"
-DOI_REGEX = r"^(?:https?://(?:dx\.)?doi\.org/|doi:\s*)?(10\.\d{4,9}/\S+)$"
+# Prefix, prefix of a doi.org URL glued inside ("10.14483/http://dx.doi.org/10.14483/x") and suffix, cut where a URL
+# or "doi.org" is glued after it ("10.1016/xhttps://doi.org/10.1016/x"). No suffix left means no DOI.
+DOI_REGEX = (
+    r"^(?:https?://(?:dx\.)?doi\.org/|doi:\s*)?(10\.\d{4,9})/+"
+    r"(?:https?://(?:dx\.)?doi\.org/(?:(10\.\d{4,9})/+)?)?"
+    r"((?:(?!https?:|doi\.org)[^\s/])(?:(?!https?:|doi\.org)\S)*)\S*$"
+)
 OPENALEX_REGEX = r"(?:^|/)(W\d+)$"
 ISBN_REGEX = r"^(\d{9}[\dX]|\d{13})$"
 
@@ -60,7 +66,15 @@ def _lowest(values):
 
 
 def _doi():
-    dois = _capture(_strings("doi"), DOI_REGEX, "i")
+    """The DOI without what is glued to it, nor "//" or a final "/": the frontend cannot route them."""
+    match = {"$regexFind": {"input": "$$item", "regex": DOI_REGEX, "options": "i"}}
+    suffix = {"$replaceAll": {"input": {"$arrayElemAt": ["$$m.captures", 2]}, "find": "//", "replacement": "/"}}
+    doi = {"$concat": [
+        {"$ifNull": [{"$arrayElemAt": ["$$m.captures", 1]}, {"$arrayElemAt": ["$$m.captures", 0]}]},
+        "/",
+        {"$rtrim": {"input": suffix, "chars": "/"}},
+    ]}
+    dois = {"$map": {"input": _strings("doi"), "as": "item", "in": {"$let": {"vars": {"m": match}, "in": doi}}}}
     return _lowest({"$map": {"input": dois, "in": {"$toLower": "$$this"}}})
 
 

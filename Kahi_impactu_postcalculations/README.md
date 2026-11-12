@@ -87,7 +87,8 @@ Notes:
 - After the types, every work gets a persistent `_id`: its DOI, OpenAlex,
   ScienTI, Minciencias, handle, DSpace OAI, ISBN (books only) or Google
   Scholar id, in that order, or its ObjectId as text when it has none.
-  Works sharing an id get `-000`, `-001`... `works` is rewritten with `$out`,
+  The DOI drops URLs glued to it, `//` and a final `/`, which the frontend
+  cannot route; a DOI with nothing left after that is skipped. Works sharing an id get `-000`, `-001`... `works` is rewritten with `$out`,
   which needs free disk for a second copy of `works` while it runs. The step
   is skipped when no work has an ObjectId `_id`.
 - Type rules come from the shared catalog JSON bundled by

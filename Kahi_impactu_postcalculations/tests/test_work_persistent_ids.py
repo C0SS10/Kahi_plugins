@@ -39,6 +39,22 @@ CASES = [
         ext("doi", "http://dx.doi.org/10.1016/S0140-6736(20)30925-9"),
         *SCIENTI_AND_MINCIENCIAS,
     ], [], ("doi", "10.1016/s0140-6736(20)30925-9")),
+    ("url glued after the doi", [
+        ext("doi", "https://doi.org/10.1016/j.rccar.2018.10.015https://doi.org/10.1016/j.rccar.2018.10.015"),
+    ], [], ("doi", "10.1016/j.rccar.2018.10.015")),
+    ("doi url glued inside the doi", [ext("doi", "https://doi.org/10.11144/https://doi.org/javeriana.vj139.gcmi")], [],
+     ("doi", "10.11144/javeriana.vj139.gcmi")),
+    ("doi url with prefix glued inside the doi", [
+        ext("doi", "https://doi.org/10.14483/http://dx.doi.org/10.14483/udistrital.jour.colomb.for.2015.1.a02"),
+    ], [], ("doi", "10.14483/udistrital.jour.colomb.for.2015.1.a02")),
+    ("double slash", [ext("doi", "https://doi.org/10.1037//0022-006X.66.4.691")], [],
+     ("doi", "10.1037/0022-006x.66.4.691")),
+    ("final slash", [ext("doi", "https://doi.org/10.1111/bij.12406/")], [], ("doi", "10.1111/bij.12406")),
+    ("no doi left after the glued url", [
+        ext("doi", "https://doi.org/10.1016/doi.org/"),
+        ext("doi", "https://doi.org/10.12804/http://revistas.urosario.edu.co/index.php/empresa/article/view/4552"),
+        ext("openalex", "https://openalex.org/W5"),
+    ], [], ("openalex", "W5")),
     ("lowest openalex", [
         ext("openalex", "https://openalex.org/W3092849554"),
         ext("openalex", "https://openalex.org/W2"),
